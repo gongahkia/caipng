@@ -1,0 +1,134 @@
+```
+You are a senior full-stack developer tasked with creating a complete web application called "cAI-png" - a Parklane cai fan dish recommendation system. Generate all necessary code, documentation, and setup instructions for this multi-day learning project.
+
+PROJECT OVERVIEW:
+Build a full-stack application where users upload photos of cai fan dishes, the system analyzes ingredients using computer vision, and recommends optimal dish combinations based on dietary preferences and nutritional factors.
+
+TECHNOLOGY STACK:
+- Backend: Node.js with Express.js
+- Frontend: React.js with modern hooks
+- Computer Vision: OpenCV.js or TensorFlow.js for image analysis
+- Database: MongoDB with Mongoose ODM
+- File Upload: Multer middleware
+- Image Processing: Sharp for optimization
+- Authentication: JWT tokens
+- Styling: Tailwind CSS or Material-UI
+
+DAY 1 - PROJECT SETUP & BACKEND FOUNDATION:
+1. Initialize Git repository "cAI-png" with proper .gitignore
+2. Create project structure:
+   ```
+   cai-png/
+   ├── backend/
+   │   ├── src/
+   │   │   ├── controllers/
+   │   │   ├── models/
+   │   │   ├── routes/
+   │   │   ├── middleware/
+   │   │   ├── utils/
+   │   │   └── config/
+   │   ├── uploads/
+   │   └── package.json
+   ├── frontend/
+   └── README.md
+   ```
+3. Set up Express server with basic middleware (cors, body-parser, morgan)
+4. Configure MongoDB connection and basic error handling
+5. Create dish and user models with nutritional data schemas
+6. Implement file upload endpoint with Multer for image handling
+
+DAY 2 - COMPUTER VISION & IMAGE ANALYSIS:
+1. Integrate OpenCV.js or create TensorFlow.js model for dish recognition
+2. Create image preprocessing pipeline (resize, normalize, enhance)
+3. Implement dish identification service that recognizes common cai fan items:
+   - Vegetables: bok choy, cabbage, kangkung, broccoli
+   - Proteins: chicken, pork, fish, tofu, egg
+   - Starches: rice, noodles
+4. Build nutritional database with calories, macros, and health scores
+5. Create analysis controller that processes uploaded images and returns identified dishes
+6. Add confidence scoring for dish recognition accuracy
+
+DAY 3 - RECOMMENDATION ENGINE & API ENDPOINTS:
+1. Design recommendation algorithm considering:
+   - User dietary preferences (vegetarian, low-carb, high-protein)
+   - Nutritional goals (weight loss, muscle gain, balanced)
+   - Budget constraints
+   - Flavor balance and variety
+2. Create API endpoints:
+   - POST /api/upload - Image upload and analysis
+   - POST /api/analyze - Process image and identify dishes
+   - POST /api/recommend - Generate meal recommendations
+   - GET /api/dishes - Retrieve dish database
+   - POST /api/preferences - Save user dietary preferences
+3. Implement recommendation logic with scoring system
+4. Add data validation and error handling for all endpoints
+
+DAY 4 - REACT FRONTEND DEVELOPMENT:
+1. Set up React app with create-react-app
+2. Create component structure:
+   - ImageUpload: drag-and-drop interface for photos
+   - DishAnalysis: display identified dishes with confidence scores
+   - PreferenceForm: user dietary and nutritional inputs
+   - RecommendationDisplay: show suggested dish combinations
+   - NutritionSummary: display macro breakdown and calories
+3. Implement state management with useReducer or Context API
+4. Add responsive design with mobile-first approach
+5. Create loading states and error handling UI components
+
+DAY 5 - INTEGRATION & USER EXPERIENCE:
+1. Connect frontend to backend APIs with fetch/axios
+2. Implement real-time image preview and analysis feedback
+3. Add user preference persistence (localStorage initially)
+4. Create interactive recommendation cards with:
+   - Dish images and names
+   - Nutritional information
+   - Cost estimates
+   - "Add to meal" functionality
+5. Build meal summary view with total nutrition and cost
+6. Add share functionality for recommended meals
+
+DAY 6 - ADVANCED FEATURES & OPTIMIZATION:
+1. Implement caching for frequently analyzed dishes
+2. Add image optimization and compression
+3. Create dish rating and feedback system
+4. Implement search and filter functionality for dishes
+5. Add meal history and favorites features
+6. Optimize computer vision model for better accuracy
+7. Add progressive web app (PWA) capabilities
+
+DAY 7 - TESTING, DEPLOYMENT & DOCUMENTATION:
+1. Write unit tests for backend controllers and services
+2. Add integration tests for API endpoints
+3. Create frontend component tests with React Testing Library
+4. Set up deployment configuration for platforms like Vercel/Netlify (frontend) and Railway/Render (backend)
+5. Create comprehensive README with:
+   - Setup instructions
+   - API documentation
+   - Architecture overview
+   - Future enhancement ideas
+6. Add environment configuration for development/production
+7. Implement monitoring and error logging
+
+SPECIFIC IMPLEMENTATION REQUIREMENTS:
+- Include detailed comments explaining computer vision algorithms
+- Provide example API requests/responses in JSON format
+- Create seed data for initial dish database (at least 50 common cai fan dishes)
+- Implement proper error boundaries and validation
+- Add TypeScript types for better code quality
+- Include Docker configuration for easy local development
+- Create automated testing pipeline with GitHub Actions
+- Implement rate limiting and basic security measures
+
+OUTPUT REQUIREMENTS:
+Generate complete, production-ready code for all components, including:
+- Complete backend server with all endpoints
+- Full React frontend with all components
+- Database models and seed data
+- Configuration files and environment setup
+- Testing suites
+- Deployment scripts
+- Comprehensive documentation
+- Package.json files with all dependencies
+
+Ensure all code is well-commented, follows best practices, and includes error handling. Provide setup instructions that a developer can follow to run the project locally within 10 minutes.
+```
