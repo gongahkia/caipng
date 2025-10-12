@@ -1,0 +1,106 @@
+/**
+ * Main server entry point for cAI-png backend
+ * Sets up Express server, middleware, routes, and database connection
+ */
+
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const compression = require('compression');
+const path = require('path');
+
+// Load environment variables
+dotenv.config();
+
+// Import configuration and middleware
+const connectDB = require('./config/database');
+const { errorHandler } = require('./middleware/errorHandler');
+const rateLimiter = require('./middleware/rateLimiter');
+
+// Import routes
+const dishRoutes = require('./routes/dishRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const analysisRoutes = require('./routes/analysisRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
+const userRoutes = require('./routes/userRoutes');
+const preferenceRoutes = require('./routes/preferenceRoutes');
+
+// Initialize Express app
+const app = express();
+
+// Connect to MongoDB
+connectDB();
+
+// Security middleware
+app.use(helmet());
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Compression middleware
+app.use(compression());
+
+// Logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
+// Rate limiting
+app.use('/api/', rateLimiter);
+
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'cAI-png server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API Routes
+app.use('/api/dishes', dishRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/analyze', analysisRoutes);
+app.use('/api/recommend', recommendationRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/preferences', preferenceRoutes);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
+
+// Start server
+const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, () => {
+  console.log(`🚀 cAI-png server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err.message);
+  server.close(() => process.exit(1));
+});
+
+module.exports = app;
+
