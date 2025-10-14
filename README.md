@@ -25,7 +25,7 @@ The below instructions are for locally hosting `cAI-png`.
 1. First execute the below.
 
 ```console
-$ git clone https://github.com/yourusername/caipng.git && cd caipng
+$ git clone https://github.com/gongahkia/caipng.git && cd caipng
 ```
 
 2. Set up MongoDB. You can either:
