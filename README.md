@@ -2,7 +2,7 @@
 
 # `cAI-png`
 
-[Cai Fan](https://en.wikipedia.org/wiki/Economy_rice) Dish Recommendation [Model](#architecture), built atop a robust [computer vision](https://www.ibm.com/think/topics/computer-vision) engine. 
+[Cai Fan](https://en.wikipedia.org/wiki/Economy_rice) Suggestion Web App, built atop a [Dish Recommendation Model](#architecture) and [Computer Vision](https://www.ibm.com/think/topics/computer-vision) Engine. 
 
 See the available [backend](#architecture) endpoints [here](#api-reference).
 
