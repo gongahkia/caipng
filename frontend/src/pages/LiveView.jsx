@@ -275,6 +275,29 @@ export default function LiveView() {
 
   return (
     <div>
+      {/* Color Legend */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#f9fafb', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+        <strong style={{ fontSize: 13, color: '#6b7280' }}>Legend:</strong>
+        <div style={{ display: 'flex', gap: 12, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 16, height: 16, background: '#22c55e', borderRadius: 3 }} />
+            <span>Vegetables</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 16, height: 16, background: '#f97316', borderRadius: 3 }} />
+            <span>Protein</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 16, height: 16, background: '#3b82f6', borderRadius: 3 }} />
+            <span>Starch/Rice</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 16, height: 16, background: '#a3a3a3', borderRadius: 3 }} />
+            <span>Unknown</span>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
         <button onClick={() => setRunning((v) => !v)}>{running ? 'Stop' : 'Start'} Live</button>
         <label style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
