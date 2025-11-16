@@ -337,6 +337,22 @@ export default function LiveView() {
         </pre>
       </div>
 
+      {trackGrams.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <strong>Estimated grams per item:</strong>
+          <div style={{ background: '#f5f5f5', padding: 8, marginTop: 4 }}>
+            {trackGrams.map((item, idx) => (
+              <div key={idx} style={{ marginBottom: 6, fontSize: 13 }}>
+                <strong>{item.label}</strong>: {item.grams}g
+                <span style={{ color: '#6b7280', marginLeft: 8 }}>
+                  (area: {(item.areaRatio * 100).toFixed(1)}%, conf: {(item.confidence * 100).toFixed(0)}%)
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {macros && (
         <div style={{ marginTop: 12 }}>
           <strong>Estimated Macros:</strong>
