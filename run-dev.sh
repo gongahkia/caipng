@@ -38,8 +38,10 @@ cleanup() {
   echo "\nShutting down..."
   # kill tail first so it releases file handles
   if [[ -n "${TAIL_PID:-}" ]]; then kill "$TAIL_PID" 2>/dev/null || true; fi
-  if [[ -n "${FRONTEND_PID:-}" ]]; then kill "$FRONTEND_PID" 2>/dev/null || true; fi
-  if [[ -n "${BACKEND_PID:-}" ]]; then kill "$BACKEND_PID" 2>/dev/null || true; fi
+  if [[ -n "${FRONTEND_PID:-}" ]]; then kill -9 "$FRONTEND_PID" 2>/dev/null || true; fi
+  if [[ -n "${BACKEND_PID:-}" ]]; then kill -9 "$BACKEND_PID" 2>/dev/null || true; fi
+  # Also kill any orphaned node processes on our ports
+  lsof -ti :5000 :3000 2>/dev/null | xargs -r kill -9 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
