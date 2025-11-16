@@ -1,8 +1,11 @@
-[![](https://img.shields.io/badge/caipng_1.0.0-passing-green)](https://github.com/gongahkia/caipng/releases/tag/1.0.0)
+[![](https://img.shields.io/badge/caipng_1.0.0-passing-light_green)](https://github.com/gongahkia/caipng/releases/tag/1.0.0)
+[![](https://img.shields.io/badge/caipng_2.0.0-passing-green)](https://github.com/gongahkia/caipng/releases/tag/2.0.0)
 
 # `cAI-png`
 
-[Cai Fan](https://en.wikipedia.org/wiki/Economy_rice) Suggestion Web App, built atop a [Dish Recommendation Model](#architecture) and [Computer Vision](https://www.ibm.com/think/topics/computer-vision) Engine. See the available [backend](#architecture) endpoints [here](#api-reference).
+[Cai Fan](https://en.wikipedia.org/wiki/Economy_rice) [Macros](https://www.calculator.net/macro-calculator.html) Web App, [built](#architecture) atop a [Computer Vision](https://www.ibm.com/think/topics/computer-vision) Engine.
+
+Available [backend endpoints](#architecture) are [here](#api-reference).
 
 <div align="center">
   <img src="./asset/logo/caifan.jpg" width="65%">
@@ -10,16 +13,16 @@
 
 ## Stack
 
-* Frontend: React 18, Vite 4 (single page, minimal styling)
-* Backend: Node.js 18+, Express.js, Mongoose, Sharp
-* Database: MongoDB 6 (dish reference data only)
-* Computer Vision: Heuristic color/texture features (Sharp) with tfjs-node scaffolding
-* LLM: Gemini (Google Generative AI) free API (text-only; no images sent)
-* Infrastructure: Docker, Docker Compose
+* Frontend: [React](https://react.dev), [Vite](https://vitejs.dev) 
+* Backend: [Node.js](https://nodejs.org), [Express.js](https://expressjs.com), [Mongoose](https://mongoosejs.com)
+* Database: [MongoDB](https://www.mongodb.com) 
+* Computer Vision: [Sharp](https://sharp.pixelplumbing.com), [tfjs-node](https://www.npmjs.com/package/@tensorflow/tfjs-node) 
+* LLM: [Gemini](https://ai.google.dev) 
+* Package: [Docker](https://www.docker.com), [Docker Compose](https://docs.docker.com/compose/)
 
 ## Usage
 
-The below instructions are for locally hosting `cAI-png` V2 live analysis.
+The below instructions are for locally hosting `cAI-png`.
 
 1. First execute the below.
 
@@ -27,45 +30,22 @@ The below instructions are for locally hosting `cAI-png` V2 live analysis.
 $ git clone https://github.com/gongahkia/caipng.git && cd caipng
 ```
 
-2. Set up MongoDB. You can either:
-    1. **Local MongoDB Installation**
-        1. macOS: `brew install mongodb-community@6.0 && brew services start mongodb-community@6.0`
-        2. Ubuntu: Follow [MongoDB Ubuntu Installation Guide](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/)
-        3. Windows: Download installer from [mongodb.com/download-center/community](https://www.mongodb.com/try/download/community)
-    2. **MongoDB Atlas (Cloud)**
-        1. Visit https://www.mongodb.com/cloud/atlas
-        2. Create free account and cluster (M0 free tier)
-        3. Get connection string from "Connect" → "Connect your application"
-        4. Use this connection string in next step
+2. Set up MongoDB [locally](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/) or via [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
 
-3. Then create environment variables. For backend, create `backend/.env`:
+3. Create and fill up `backend/.env`.
 
 ```env
-# Application Configuration
 NODE_ENV=development
 PORT=5000
-
-# Database Configuration (choose one)
-# Option 1: Local MongoDB
 MONGODB_URI=mongodb://localhost:27017/caipng
-
-# Option 2: MongoDB Atlas
-# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/caipng
-
-## LLM Configuration
-# Gemini (Google AI Studio) Free API Key
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-1.5-flash
-
-# File Upload Configuration
 MAX_FILE_SIZE=10485760
 UPLOAD_PATH=./uploads
-
-# CORS Configuration
 CORS_ORIGIN=http://localhost:3000
 ```
 
-For frontend, create `frontend/.env`:
+4. Create and fill up `frontend/.env`.
 
 ```env
 VITE_API_URL=http://localhost:5000/api
@@ -81,40 +61,25 @@ $ cd ../frontend && npm install
 $ cd ..
 ```
 
-5. Finally run the development servers. Open two terminal windows:
-
-**Terminal 1 (Backend):**
-```console
-$ cd backend && npm run dev
-```
-
-**Terminal 2 (Frontend):**
-```console
-$ cd frontend && npm run dev
-```
-
-6. Alternatively, use Docker Compose to run everything:
+5. Run with Docker Compose or the Makefile.
 
 ```console
 $ docker-compose up -d
 $ docker-compose exec backend npm run seed
-```
-
-7. Or use the Makefile for convenience:
-
-```console
 $ make install
 $ make docker-up
 ```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- Health Check: http://localhost:5000/health
+* Frontend: http://localhost:3000
+* Backend API: http://localhost:5000
+* Health Check: http://localhost:5000/health
 
 ## Architecture
 
-V2 focuses on a live webcam pipeline: the browser captures frames, the backend runs heuristic detection and returns bounding boxes with confidences at ~5–10 FPS, and a derived text summary is sent to Gemini to estimate macros. No images are sent to LLM.
+* Browser captures frames
+* Backend runs heuristic detection and returns bounding boxes with confidences at ~5–10 FPS
+* Derived text summary is sent to Gemini to estimate macros
+* No images are sent to the LLM
 
 ### System Context Diagram
 
