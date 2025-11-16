@@ -185,6 +185,21 @@ export default function LiveView() {
             .sort((a,b) => (b.avg||0) - (a.avg||0))
             .slice(0, maxItems);
 
+          // Calculate grams for each track
+          const plateGrams = 500; // heuristic: full-frame ~500g of food
+          const gramsData = tracks.map(t => {
+            const area = (t.box?.width || 0) * (t.box?.height || 0);
+            const ratio = area / (w * h);
+            const grams = Math.round(Math.max(0, Math.min(plateGrams * ratio, plateGrams)));
+            return {
+              label: t.label,
+              grams,
+              areaRatio: ratio,
+              confidence: t.avg
+            };
+          });
+          setTrackGrams(gramsData);
+
           // Draw boxes
           ctx.lineWidth = 2;
           ctx.font = '14px sans-serif';
