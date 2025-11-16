@@ -29,8 +29,7 @@
     "express-rate-limit": "^6.10.0",
     "helmet": "^7.0.0",
     "compression": "^1.7.4",
-    "@tensorflow/tfjs-node": "^4.10.0",
-    "canvas": "^2.11.2",
+  "@tensorflow/tfjs-node": "^4.10.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
