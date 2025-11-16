@@ -47,6 +47,15 @@ trap cleanup EXIT INT TERM
 
 check_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# Pre-emptively kill any processes on our ports before starting
+echo "[preflight] Checking for port conflicts..."
+STRAY_PIDS=$(lsof -ti :5000,:3000 2>/dev/null || true)
+if [[ -n "$STRAY_PIDS" ]]; then
+  echo "[preflight] Killing stray processes on ports 5000/3000: $STRAY_PIDS"
+  echo "$STRAY_PIDS" | xargs -r kill -9 2>/dev/null || true
+  sleep 1
+fi
+
 if ! check_cmd node; then
   echo "Error: node is not installed. Install Node.js >= 18 and retry." >&2
   exit 1
