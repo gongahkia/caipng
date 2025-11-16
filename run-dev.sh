@@ -7,6 +7,7 @@ set -euo pipefail
 
 # Move to repo root
 cd "$(dirname "$0")"
+ROOT_DIR="$(pwd)"
 
 # Auto-source root .env (without leaking into shell history) if present
 if [ -f .env ]; then
@@ -24,9 +25,9 @@ else
   echo "[env] GEMINI_API_KEY not loaded from root .env or environment"
 fi
 
-LOG_DIR="./logs"
-BACKEND_DIR="./backend"
-FRONTEND_DIR="./frontend"
+LOG_DIR="$ROOT_DIR/logs"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
 BACKEND_LOG="$LOG_DIR/backend.dev.log"
 FRONTEND_LOG="$LOG_DIR/frontend.dev.log"
 
@@ -68,10 +69,10 @@ fi
   export CORS_ORIGIN="${CORS_ORIGIN:-http://localhost:3000}"
   echo "[backend] Starting dev server on :5000... (logs: $BACKEND_LOG)"
   npm run dev >"$BACKEND_LOG" 2>&1 &
-  echo $! > ../.backend.pid
-) 
-BACKEND_PID="$(cat .backend.pid)"
-rm -f .backend.pid
+  echo $! > "$ROOT_DIR/.backend.pid"
+)
+BACKEND_PID="$(cat "$ROOT_DIR/.backend.pid")"
+rm -f "$ROOT_DIR/.backend.pid"
 
 # Start frontend
 (
@@ -80,19 +81,18 @@ rm -f .backend.pid
     echo "[frontend] Installing dependencies..."
     npm install
   fi
-  # Vite dev server will proxy /api to http://localhost:5000 by default per vite.config.js
   echo "[frontend] Starting dev server on :3000... (logs: $FRONTEND_LOG)"
   npm run dev >"$FRONTEND_LOG" 2>&1 &
-  echo $! > ../.frontend.pid
+  echo $! > "$ROOT_DIR/.frontend.pid"
 )
-FRONTEND_PID="$(cat .frontend.pid)"
-rm -f .frontend.pid
+FRONTEND_PID="$(cat "$ROOT_DIR/.frontend.pid")"
+rm -f "$ROOT_DIR/.frontend.pid"
 
 # Tail both logs
 echo "\nBoth servers started. Opening combined logs (Ctrl+C to stop):"
-( tail -n +1 -f "$BACKEND_LOG" "$FRONTEND_LOG" & echo $! > .tail.pid )
-TAIL_PID="$(cat .tail.pid)"
-rm -f .tail.pid
+( tail -n +1 -f "$BACKEND_LOG" "$FRONTEND_LOG" & echo $! > "$ROOT_DIR/.tail.pid" )
+TAIL_PID="$(cat "$ROOT_DIR/.tail.pid")"
+rm -f "$ROOT_DIR/.tail.pid"
 
 # Print quick links
 cat <<EOF
