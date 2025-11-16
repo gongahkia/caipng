@@ -62,6 +62,25 @@ fi
 # Start backend
 (
   cd "$BACKEND_DIR"
+  # Inject GEMINI_API_KEY into backend/.env if backend .env missing or key absent
+  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+    if [[ ! -f .env ]]; then
+      echo "[backend-env] Creating backend/.env with GEMINI_API_KEY"
+      printf "GEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" > .env
+    else
+      if ! grep -q '^GEMINI_API_KEY=' .env; then
+        echo "[backend-env] Appending GEMINI_API_KEY to backend/.env"
+        printf "\nGEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" >> .env
+      fi
+    fi
+  fi
+  # Ensure essential defaults exist
+  ensure_var() { local k="$1" v="$2"; if ! grep -q "^$k=" .env 2>/dev/null; then echo "[backend-env] Setting default $k=$v"; printf "\n%s=%s\n" "$k" "$v" >> .env; fi }
+  if [[ ! -f .env ]]; then touch .env; fi
+  ensure_var NODE_ENV "development"
+  ensure_var PORT "5000"
+  ensure_var MONGODB_URI "mongodb://localhost:27017/caipng"
+  ensure_var CORS_ORIGIN "http://localhost:3000"
   if [[ ! -d node_modules ]]; then
     echo "[backend] Installing dependencies..."
     npm install
@@ -90,7 +109,7 @@ rm -f "$ROOT_DIR/.frontend.pid"
 
 # Tail both logs
 echo "\nBoth servers started. Opening combined logs (Ctrl+C to stop):"
-( tail -n +1 -f "$BACKEND_LOG" "$FRONTEND_LOG" & echo $! > "$ROOT_DIR/.tail.pid" )
+ tail -n +1 -f "$BACKEND_LOG" "$FRONTEND_LOG" & echo $! > "$ROOT_DIR/.tail.pid"
 TAIL_PID="$(cat "$ROOT_DIR/.tail.pid")"
 rm -f "$ROOT_DIR/.tail.pid"
 

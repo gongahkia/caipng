@@ -6,8 +6,13 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.warn('⚠️  MONGODB_URI not set; skipping DB connection (app will run without persistence).');
+    return;
+  }
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+    const conn = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
@@ -29,7 +34,9 @@ const connectDB = async () => {
 
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
-    process.exit(1);
+    // Do not hard exit; allow running in a degraded (stateless) mode.
+    // Comment the next line if you prefer silent failure.
+    // process.exit(1);
   }
 };
 
