@@ -26,6 +26,45 @@ export default function LiveView() {
     return union > 0 ? inter / union : 0;
   };
 
+  const nonMaxSuppression = (detections, iouThreshold = 0.5) => {
+    if (!detections || detections.length === 0) return [];
+
+    // Sort by confidence (descending)
+    const sorted = [...detections].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+    const keep = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+      const current = sorted[i];
+      if (!current.box) {
+        keep.push(current);
+        continue;
+      }
+
+      let shouldKeep = true;
+      for (let j = 0; j < keep.length; j++) {
+        const kept = keep[j];
+        if (!kept.box) continue;
+
+        // Only suppress if same category/label
+        const currentLabel = (current.label || current.category || '').toLowerCase();
+        const keptLabel = (kept.label || kept.category || '').toLowerCase();
+        if (currentLabel !== keptLabel) continue;
+
+        const overlap = iou(current.box, kept.box);
+        if (overlap > iouThreshold) {
+          shouldKeep = false;
+          break;
+        }
+      }
+
+      if (shouldKeep) {
+        keep.push(current);
+      }
+    }
+
+    return keep;
+  };
+
   const updateTracks = (newDets) => {
     const tracks = tracksRef.current.slice();
     const used = new Array(newDets.length).fill(false);
