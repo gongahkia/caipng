@@ -9,6 +9,7 @@ export default function LiveView() {
   const [useLocalDetection, setUseLocalDetection] = useState(false);
   const [detections, setDetections] = useState([]);
   const [avgByLabel, setAvgByLabel] = useState({});
+  const [trackGrams, setTrackGrams] = useState([]); // Store grams data per track
   const [macros, setMacros] = useState(null);
   const [narrative, setNarrative] = useState('');
   const frameIntervalMs = 150; // ~6-7 fps target; adjustable up to ~100ms for ~10 fps
