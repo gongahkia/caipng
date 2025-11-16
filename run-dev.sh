@@ -8,6 +8,14 @@ set -euo pipefail
 # Move to repo root
 cd "$(dirname "$0")"
 
+# Auto-source root .env (without leaking into shell history) if present
+if [ -f .env ]; then
+  echo "[env] Sourcing root .env"
+  set -a
+  . ./.env
+  set +a
+fi
+
 LOG_DIR="./logs"
 BACKEND_DIR="./backend"
 FRONTEND_DIR="./frontend"
@@ -39,7 +47,7 @@ fi
 
 # Warn if Gemini key not set (macros will return placeholder values)
 if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "[warn] GEMINI_API_KEY not set. Macros endpoint will return placeholder values."
+  echo "[warn] GEMINI_API_KEY not set (from environment or .env). Macros endpoint will return placeholder values."
 fi
 
 # Start backend
