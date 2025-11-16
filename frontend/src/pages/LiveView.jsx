@@ -13,7 +13,7 @@ export default function LiveView() {
   const [narrative, setNarrative] = useState('');
   const frameIntervalMs = 150; // ~6-7 fps target; adjustable up to ~100ms for ~10 fps
   const rollingWindow = useRef({}); // { label: { sum, count } }
-  const tracksRef = useRef([]); // IoU tracker: [{ id, label, box, avg, hits, misses }]
+  const tracksRef = useRef([]); // IoU tracker: [{ id, label, box, avg, hits, misses, lastConf }]
 
   const iou = (a, b) => {
     const x1 = Math.max(a.x, b.x);
@@ -46,7 +46,8 @@ export default function LiveView() {
         // Update track
         const d = newDets[bestIdx];
         t.box = d.box;
-        t.avg = (t.avg * t.hits + (d.confidence || 0)) / (t.hits + 1);
+  t.avg = (t.avg * t.hits + (d.confidence || 0)) / (t.hits + 1);
+  t.lastConf = d.confidence || t.lastConf || 0;
         t.hits += 1;
         t.misses = 0;
         used[bestIdx] = true;
@@ -59,7 +60,7 @@ export default function LiveView() {
     newDets.forEach((d, i) => {
       if (used[i]) return;
       const id = Math.random().toString(36).slice(2, 9);
-      tracks.push({ id, label: d.label || d.category || 'unknown', box: d.box, avg: d.confidence || 0, hits: 1, misses: 0 });
+  tracks.push({ id, label: d.label || d.category || 'unknown', box: d.box, avg: d.confidence || 0, hits: 1, misses: 0, lastConf: d.confidence || 0 });
     });
 
     // Prune stale tracks
@@ -175,26 +176,50 @@ export default function LiveView() {
           setAvgByLabel(nextAvg);
 
           // Update tracks and use their averages for per-box overlays
-          const tracks = updateTracks(dets);
+          let tracks = updateTracks(dets);
+          // Sort tracks by avg confidence desc and limit to maxItems
+          const maxItems = 10;
+          tracks = tracks
+            .filter(t => t.box)
+            .sort((a,b) => (b.avg||0) - (a.avg||0))
+            .slice(0, maxItems);
 
           // Draw boxes
-          ctx.strokeStyle = 'lime';
           ctx.lineWidth = 2;
           ctx.font = '14px sans-serif';
-          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          const colorFor = (label) => {
+            const l = (label||'').toLowerCase();
+            if (l.includes('veg')) return '#22c55e';     // green
+            if (l.includes('protein')) return '#f97316'; // orange
+            if (l.includes('starch') || l.includes('rice') || l.includes('noodle')) return '#3b82f6'; // blue
+            return '#a3a3a3'; // gray
+          };
           tracks.forEach(t => {
             if (!t.box) return;
             const { x, y, width, height } = t.box;
+            ctx.strokeStyle = colorFor(t.label);
             ctx.strokeRect(x, y, width, height);
             const label = t.label || 'unknown';
             const avg = t.avg || 0;
-            const text = `${label} ${(avg * 100).toFixed(0)}%`;
-            const tw = ctx.measureText(text).width + 8;
-            const th = 18;
-            ctx.fillRect(x, Math.max(0, y - th), tw, th);
+            const labelAvg = nextAvg[label] || avg || 0;
+            // Compose value block to the right of the box
+            const lines = [
+              `${label}`,
+              `conf ${(t.lastConf*100||0).toFixed(0)}%`,
+              `avg ${(labelAvg*100).toFixed(0)}%`,
+            ];
+            const pad = 6;
+            const lineH = 18;
+            const blockW = Math.max(...lines.map(l => ctx.measureText(l).width)) + pad*2;
+            const blockH = lines.length * lineH + pad*2;
+            const rx = Math.min(w - blockW - 2, x + width + 6); // prefer right side
+            const ry = Math.max(2, Math.min(h - blockH - 2, y));
+            // Block background
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(rx, ry, blockW, blockH);
+            // Text
             ctx.fillStyle = '#fff';
-            ctx.fillText(text, x + 4, Math.max(12, y - 4));
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            lines.forEach((ln, i) => ctx.fillText(ln, rx + pad, ry + pad + lineH*(i+0.7)));
           });
         }
       } catch (e) {
