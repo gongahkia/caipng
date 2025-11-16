@@ -26,13 +26,25 @@ class VisionService {
    */
   async initialize() {
     try {
-      // Load all dishes from database for feature matching
-      this.dishDatabase = await Dish.find({}).lean();
+      // Try to load dishes from database, but fallback to empty if DB unavailable
+      try {
+        this.dishDatabase = await Dish.find({}).lean().maxTimeMS(2000);
+        console.log('✅ Vision service initialized with', this.dishDatabase.length, 'dishes');
+      } catch (dbError) {
+        console.warn('⚠️  Database unavailable, using fallback dish list');
+        // Fallback: use simple hardcoded dish categories for detection without DB
+        this.dishDatabase = [
+          { _id: 'fallback-veg', dishName: 'Vegetable', category: 'vegetable' },
+          { _id: 'fallback-protein', dishName: 'Protein', category: 'protein' },
+          { _id: 'fallback-starch', dishName: 'Starch', category: 'starch' },
+        ];
+      }
       this.modelLoaded = true;
-      console.log('✅ Vision service initialized with', this.dishDatabase.length, 'dishes');
     } catch (error) {
       console.error('❌ Failed to initialize vision service:', error);
-      throw error;
+      // Don't throw; allow degraded mode
+      this.dishDatabase = [];
+      this.modelLoaded = true;
     }
   }
 
