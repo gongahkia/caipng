@@ -199,6 +199,9 @@ export default function LiveView() {
           }
         }
         if (dets.length >= 0) {
+          // Apply non-max suppression to remove overlapping boxes
+          dets = nonMaxSuppression(dets, 0.5);
+
           setDetections(dets);
 
           // Update rolling averages by label
