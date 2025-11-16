@@ -20,12 +20,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const rateLimiter = require('./middleware/rateLimiter');
 
 // Import routes
-const dishRoutes = require('./routes/dishRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const analysisRoutes = require('./routes/analysisRoutes');
-const recommendationRoutes = require('./routes/recommendationRoutes');
-const userRoutes = require('./routes/userRoutes');
-const preferenceRoutes = require('./routes/preferenceRoutes');
+const liveRoutes = require('./routes/liveRoutes');
 
 // Initialize Express app
 const app = express();
@@ -59,7 +54,7 @@ if (process.env.NODE_ENV === 'development') {
 // Rate limiting
 app.use('/api/', rateLimiter);
 
-// Static files for uploads
+// Static files for uploads (may be unused in V2, kept for temp storage)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
@@ -71,13 +66,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/api/dishes', dishRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/analyze', analysisRoutes);
-app.use('/api/recommend', recommendationRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/preferences', preferenceRoutes);
+// API Routes (V2)
+app.use('/api/live', liveRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -10,17 +10,16 @@
 
 ## Stack
 
-* *Frontend*: [React 18](https://react.dev/), [Vite 4](https://vitejs.dev/), [Material-UI 5](https://mui.com/), [React Router 6](https://reactrouter.com/), [Chart.js](https://www.chartjs.org/), [Framer Motion](https://www.framer.com/motion/), [Axios](https://axios-http.com/), [React Context API](https://react.dev/reference/react/useContext)
-* *Backend*: [Node.js 18+](https://nodejs.org/), [Express.js](https://expressjs.com/), [Mongoose ODM](https://mongoosejs.com/), [Multer](https://github.com/expressjs/multer), [Sharp](https://sharp.pixelplumbing.com/), [JWT](https://jwt.io/)
-* *Database*: [MongoDB 6](https://www.mongodb.com/)
-* *Computer Vision*: [TensorFlow.js](https://www.tensorflow.org/js)
-* *Security*: [Helmet](https://helmetjs.github.io/), [bcrypt](https://github.com/kelektiv/node.bcrypt.js)
-* *Testing*: [Jest](https://jestjs.io/) (Backend), [Vitest](https://vitest.dev/) (Frontend), [React Testing Library](https://testing-library.com/react)
-* *Infrastructure*: [Docker](https://www.docker.com/), [Docker Compose](https://docs.docker.com/compose/)
+* Frontend: React 18, Vite 4 (single page, minimal styling)
+* Backend: Node.js 18+, Express.js, Mongoose, Sharp
+* Database: MongoDB 6 (dish reference data only)
+* Computer Vision: Heuristic color/texture features (Sharp) with tfjs-node scaffolding
+* LLM: Gemini (Google Generative AI) free API (text-only; no images sent)
+* Infrastructure: Docker, Docker Compose
 
 ## Usage
 
-The below instructions are for locally hosting `cAI-png`.
+The below instructions are for locally hosting `cAI-png` V2 live analysis.
 
 1. First execute the below.
 
@@ -53,9 +52,10 @@ MONGODB_URI=mongodb://localhost:27017/caipng
 # Option 2: MongoDB Atlas
 # MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/caipng
 
-# Authentication & Security
-JWT_SECRET=your_super_secret_key_change_in_production
-JWT_EXPIRE=7d
+## LLM Configuration
+# Gemini (Google AI Studio) Free API Key
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-1.5-flash
 
 # File Upload Configuration
 MAX_FILE_SIZE=10485760
@@ -63,10 +63,6 @@ UPLOAD_PATH=./uploads
 
 # CORS Configuration
 CORS_ORIGIN=http://localhost:3000
-
-# Rate Limiting
-RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX_REQUESTS=100
 ```
 
 For frontend, create `frontend/.env`:
@@ -112,13 +108,13 @@ $ make docker-up
 ```
 
 The application will be available at:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **Health Check**: http://localhost:5000/health
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- Health Check: http://localhost:5000/health
 
 ## Architecture
 
-`cAI-png` is structured as a full-stack MERN application with Express.js backend API, React frontend with image upload capabilities, and MongoDB for data persistence. The system uses a simplified computer vision pipeline for dish identification and a multi-criteria recommendation engine for meal suggestions.
+V2 focuses on a live webcam pipeline: the browser captures frames, the backend runs heuristic detection and returns bounding boxes with confidences at ~5–10 FPS, and a derived text summary is sent to Gemini to estimate macros. No images are sent to LLM.
 
 ### System Context Diagram
 
@@ -128,18 +124,20 @@ C4Context
 
     Person(user, "User", "Uploads cai fan images and receives personalized meal recommendations")
 
-    System(web_app, "cAI-png Web Application", "React SPA with image upload and recommendation display")
-    System(backend_api, "Backend API", "Express.js server handling dish analysis and recommendations")
-    System(database, "MongoDB Database", "Stores dishes, analyses, user preferences, and favorites")
+  System(web_app, "cAI-png Web Application", "React SPA with live webcam overlay")
+  System(backend_api, "Backend API", "Express.js server handling live frame analysis and LLM macros")
+  System(database, "MongoDB Database", "Stores dish reference data only")
     
-    System_Ext(image_processor, "Image Processing", "Sharp library for image optimization")
-    System_Ext(vision_service, "Vision Service", "Computer vision for dish identification")
+  System_Ext(image_processor, "Image Processing", "Sharp-based feature extraction")
+  System_Ext(vision_service, "Vision Service", "Heuristic matching for dish/categories")
+  System_Ext(llm, "Gemini LLM", "Text-only macro estimation")
 
     Rel(user, web_app, "Uploads images, sets preferences", "HTTPS")
     Rel(web_app, backend_api, "Makes API calls", "REST API")
     Rel(backend_api, database, "Queries and stores data", "MongoDB Protocol")
     Rel(backend_api, image_processor, "Processes uploaded images", "Library")
-    Rel(backend_api, vision_service, "Analyzes dish images", "Internal Service")
+  Rel(backend_api, vision_service, "Analyzes frames")
+  Rel(backend_api, llm, "Text prompt with derived detections")
 ```
 
 ### Container Diagram
@@ -151,35 +149,31 @@ C4Container
     Person(user, "User")
 
     Container_Boundary(caipng_system, "cAI-png System") {
-        Container(react_app, "React Frontend", "React 18, Vite, MUI", "SPA with image upload and meal recommendations")
-        Container(express_api, "Express Backend", "Node.js, Express", "REST API with file upload and authentication")
-        Container(vision_service, "Vision Service", "TensorFlow.js, Image Processing", "Dish identification from images")
-        Container(recommendation_engine, "Recommendation Engine", "TypeScript, Scoring Algorithm", "Generates personalized meal combinations")
-        ContainerDb(mongodb, "MongoDB", "NoSQL Database", "Stores dishes, users, preferences, analyses")
+  Container(react_app, "React Frontend", "React 18, Vite", "Single live page with webcam and overlay")
+  Container(express_api, "Express Backend", "Node.js, Express", "REST API for live analyze + macros")
+  Container(vision_service, "Vision Service", "Sharp heuristics", "Frame analysis with boxes/confidences")
+  ContainerDb(mongodb, "MongoDB", "NoSQL Database", "Stores dish reference data")
     }
 
     Rel(user, react_app, "Interacts with", "HTTPS")
     Rel(react_app, express_api, "API calls", "REST/JSON")
     Rel(express_api, vision_service, "Analyzes images")
-    Rel(express_api, recommendation_engine, "Generates recommendations")
-    Rel(express_api, mongodb, "Reads/Writes", "Mongoose ODM")
-    Rel(vision_service, mongodb, "Fetches dish features", "Mongoose ODM")
+  Rel(express_api, mongodb, "Reads dish data", "Mongoose ODM")
+  Rel(vision_service, mongodb, "Fetches dish features", "Mongoose ODM")
 ```
 
-### Image Analysis Flow
+### Live Analysis Flow
 
 ```mermaid
 C4Component
     title Image Analysis Component Flow
 
-    Person(user, "User", "Uploads cai fan dish photo")
+  Person(user, "User", "Holds plate in front of webcam")
 
     Container_Boundary(backend_system, "Backend System") {
-        Component(upload_controller, "Upload Controller", "Express.js", "Handles multipart file upload")
-        Component(image_processor, "Image Processor", "Sharp", "Optimizes and creates thumbnails")
-        Component(vision_service, "Vision Service", "Computer Vision", "Identifies dishes in image")
-        Component(dish_matcher, "Dish Matcher", "Pattern Matching", "Matches visual features to dish database")
-        Component(nutrition_calculator, "Nutrition Calculator", "Aggregator", "Sums nutritional values")
+  Component(live_controller, "Live Controller", "Express.js", "Accepts frames, returns boxes+confidences")
+  Component(image_processor, "Image Processor", "Sharp", "Extracts features")
+  Component(vision_service, "Vision Service", "Heuristics", "Identifies likely dishes/categories")
     }
 
     Container_Boundary(data_layer, "Data Layer") {
@@ -187,21 +181,14 @@ C4Component
         ComponentDb(uploads_storage, "File Storage", "Disk", "Uploaded images")
     }
 
-    Rel(user, upload_controller, "POST /api/analyze + image", "multipart/form-data")
-    Rel(upload_controller, image_processor, "Process image")
-    Rel(image_processor, uploads_storage, "Save files")
-    
-    Rel(upload_controller, vision_service, "Analyze image")
-    Rel(vision_service, dish_matcher, "Extract features")
-    Rel(dish_matcher, mongodb, "Query dish features")
-    Rel(dish_matcher, vision_service, "Return matched dishes")
-    
-    Rel(vision_service, nutrition_calculator, "Calculate totals")
-    Rel(nutrition_calculator, upload_controller, "Return analysis")
-    Rel(upload_controller, user, "Return identified dishes + nutrition", "JSON")
+  Rel(user, live_controller, "POST /api/live/analyze (base64 frame)", "JSON")
+  Rel(live_controller, image_processor, "Extract features")
+  Rel(image_processor, uploads_storage, "Temp files (optional)")
+  Rel(live_controller, vision_service, "Analyze frame")
+  Rel(live_controller, user, "Return boxes + confidences", "JSON")
 ```
 
-### Recommendation Generation Flow
+### Macros Estimation Flow
 
 ```mermaid
 sequenceDiagram
@@ -211,30 +198,14 @@ sequenceDiagram
     participant Rec as Recommendation Engine
     participant DB as Dish Database
 
-    U->>API: POST /api/recommend (preferences)
-    API->>Pref: Fetch user preferences
-    Pref->>API: Return preferences
-    
-    API->>DB: Query available dishes
-    DB->>API: Return all dishes
-    
-    API->>Rec: Generate combinations
-    Rec->>Rec: Filter by dietary restrictions
-    Rec->>Rec: Generate meal combinations
-    
-    loop For each combination
-        Rec->>Rec: Calculate nutrition scores
-        Rec->>Rec: Calculate budget score
-        Rec->>Rec: Calculate variety score
-        Rec->>Rec: Calculate health score
-        Rec->>Rec: Compute total score
-    end
-    
-    Rec->>Rec: Sort by score (descending)
-    Rec->>Rec: Take top 10 recommendations
-    Rec->>API: Return recommendations
-    
-    API->>U: Return ranked meal suggestions
+  participant U as User
+  participant API as Express API
+  participant LLM as Gemini
+
+  U->>API: POST /api/live/macros (derived text: labels + avg confidences)
+  API->>LLM: Prompt with derived text (no images)
+  LLM->>API: JSON with macros + narrative
+  API->>U: Return macros summary
 ```
 
 ### Data Model
@@ -374,95 +345,42 @@ GET /api/dishes?category=vegetable&vegetarian=true&page=1&limit=20
 GET /api/dishes/search?q=chicken
 ```
 
-#### Analyze Image
+#### Live Analyze Frame
 ```http
-POST /api/analyze
-Content-Type: multipart/form-data
-
-image: <file>
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "analysisId": "507f1f77bcf86cd799439011",
-    "identifiedDishes": [
-      {
-        "dish": {
-          "_id": "507f1f77bcf86cd799439012",
-          "name": "Sweet and Sour Chicken",
-          "category": "protein",
-          "nutrition": { "calories": 245, "protein": 18 }
-        },
-        "confidence": 0.87,
-        "boundingBox": { "x": 100, "y": 50, "width": 200, "height": 150 }
-      }
-    ],
-    "nutritionalSummary": {
-      "totalCalories": 450,
-      "totalProtein": 25,
-      "totalCarbs": 45,
-      "totalFat": 15,
-      "estimatedPrice": 7.50
-    },
-    "metadata": {
-      "processingTime": 1523,
-      "imageQuality": "good"
-    }
-  }
-}
-```
-
-#### Generate Recommendations
-```http
-POST /api/recommend
+POST /api/live/analyze
 Content-Type: application/json
 
 {
-  "preferences": {
-    "dietaryRestrictions": {
-      "vegetarian": true
-    },
-    "nutritionalGoals": {
-      "goalType": "weight-loss",
-      "dailyCalorieTarget": 1800
-    },
-    "budgetPreferences": {
-      "maxPricePerMeal": 8
-    },
-    "mealComposition": {
-      "preferredVegetableCount": 2,
-      "preferredProteinCount": 1,
-      "includeStarch": true
-    }
-  }
+  "imageBase64": "data:image/jpeg;base64,..."
 }
 ```
 
-**Response**:
+Response:
 ```json
 {
   "success": true,
-  "count": 10,
-  "data": [
-    {
-      "dishes": [
-        { "name": "Stir-Fried Bok Choy", "category": "vegetable" },
-        { "name": "Braised Tofu", "category": "protein" },
-        { "name": "Brown Rice", "category": "starch" }
-      ],
-      "score": 87.5,
-      "nutritionalSummary": {
-        "totalCalories": 420,
-        "totalProtein": 22,
-        "totalCarbs": 58,
-        "totalFat": 10
-      },
-      "estimatedPrice": 6.00
-    }
+  "detections": [
+    { "label": "vegetable", "confidence": 0.76, "box": { "x": 100, "y": 60, "width": 180, "height": 140 } }
   ]
+}
+```
+
+#### Estimate Macros (LLM)
+```http
+POST /api/live/macros
+Content-Type: application/json
+
+{
+  "derivedText": "Detected items (rolling):\nvegetable: avgConfidence=78%\nprotein: avgConfidence=65%\n"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "macros": { "calories": 640, "protein": 28, "carbs": 70, "fat": 20 },
+  "narrative": "Estimated based on detected categories and common portions."
 }
 ```
 

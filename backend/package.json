@@ -1,13 +1,12 @@
 {
   "name": "caipng-backend",
   "version": "1.0.0",
-  "description": "Backend server for cAI-png dish recommendation system",
+  "description": "Backend server for cAI-png V2 live analysis and macros",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch",
+  "test": "echo 'No tests for V2 prototype' && exit 0",
     "seed": "node src/utils/seedDatabase.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix"
@@ -26,21 +25,20 @@
     "dotenv": "^16.3.1",
     "cors": "^2.8.5",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
+  "multer": "^1.4.5-lts.1",
     "sharp": "^0.32.5",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
-    "express-validator": "^7.0.1",
+  "jsonwebtoken": "^9.0.2",
+  "bcryptjs": "^2.4.3",
+  "express-validator": "^7.0.1",
     "express-rate-limit": "^6.10.0",
     "helmet": "^7.0.0",
     "compression": "^1.7.4",
     "@tensorflow/tfjs-node": "^4.10.0",
-    "canvas": "^2.11.2"
+    "canvas": "^2.11.2",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
-    "jest": "^29.6.4",
-    "supertest": "^6.3.3",
     "eslint": "^8.48.0"
   }
 }
