@@ -16,6 +16,14 @@ if [ -f .env ]; then
   set +a
 fi
 
+# Masked echo of critical variables for troubleshooting
+MASKED_GEMINI="${GEMINI_API_KEY:0:8}********"
+if [ -n "${GEMINI_API_KEY:-}" ]; then
+  echo "[env] GEMINI_API_KEY detected (prefix): $MASKED_GEMINI"
+else
+  echo "[env] GEMINI_API_KEY not loaded from root .env or environment"
+fi
+
 LOG_DIR="./logs"
 BACKEND_DIR="./backend"
 FRONTEND_DIR="./frontend"
