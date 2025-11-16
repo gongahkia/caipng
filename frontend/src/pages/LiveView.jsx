@@ -6,12 +6,99 @@ export default function LiveView() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [running, setRunning] = useState(false);
+  const [useLocalDetection, setUseLocalDetection] = useState(false);
   const [detections, setDetections] = useState([]);
   const [avgByLabel, setAvgByLabel] = useState({});
   const [macros, setMacros] = useState(null);
   const [narrative, setNarrative] = useState('');
   const frameIntervalMs = 150; // ~6-7 fps target; adjustable up to ~100ms for ~10 fps
-  const rollingWindow = useRef({}); // { label: { sum: number, count: number } }
+  const rollingWindow = useRef({}); // { label: { sum, count } }
+  const tracksRef = useRef([]); // IoU tracker: [{ id, label, box, avg, hits, misses }]
+
+  const iou = (a, b) => {
+    const x1 = Math.max(a.x, b.x);
+    const y1 = Math.max(a.y, b.y);
+    const x2 = Math.min(a.x + a.width, b.x + b.width);
+    const y2 = Math.min(a.y + a.height, b.y + b.height);
+    const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+    const union = a.width * a.height + b.width * b.height - inter;
+    return union > 0 ? inter / union : 0;
+  };
+
+  const updateTracks = (newDets) => {
+    const tracks = tracksRef.current.slice();
+    const used = new Array(newDets.length).fill(false);
+
+    // Match existing tracks to new detections
+    tracks.forEach(t => {
+      let bestIdx = -1;
+      let bestScore = 0;
+      newDets.forEach((d, i) => {
+        if (used[i]) return;
+        if (t.label !== (d.label || d.category)) return;
+        const score = iou(t.box, d.box || { x:0,y:0,width:0,height:0 });
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      });
+      if (bestIdx >= 0 && bestScore > 0.2) {
+        // Update track
+        const d = newDets[bestIdx];
+        t.box = d.box;
+        t.avg = (t.avg * t.hits + (d.confidence || 0)) / (t.hits + 1);
+        t.hits += 1;
+        t.misses = 0;
+        used[bestIdx] = true;
+      } else {
+        t.misses += 1;
+      }
+    });
+
+    // Create new tracks for unmatched detections
+    newDets.forEach((d, i) => {
+      if (used[i]) return;
+      const id = Math.random().toString(36).slice(2, 9);
+      tracks.push({ id, label: d.label || d.category || 'unknown', box: d.box, avg: d.confidence || 0, hits: 1, misses: 0 });
+    });
+
+    // Prune stale tracks
+    const next = tracks.filter(t => t.misses <= 8);
+    tracksRef.current = next;
+    return next;
+  };
+
+  const analyzeLocal = (ctx, w, h) => {
+    // Simple quadrant analysis: infer category by color dominance
+    const regions = [
+      { x: 0, y: 0, width: Math.floor(w/2), height: Math.floor(h/2) },
+      { x: Math.floor(w/2), y: 0, width: Math.ceil(w/2), height: Math.floor(h/2) },
+      { x: 0, y: Math.floor(h/2), width: Math.floor(w/2), height: Math.ceil(h/2) },
+      { x: Math.floor(w/2), y: Math.floor(h/2), width: Math.ceil(w/2), height: Math.ceil(h/2) },
+    ];
+    const dets = [];
+    regions.forEach(r => {
+      const sampleStep = 8;
+      let rs=0, gs=0, bs=0, c=0;
+      for (let y = r.y; y < r.y + r.height; y += sampleStep) {
+        for (let x = r.x; x < r.x + r.width; x += sampleStep) {
+          const data = ctx.getImageData(x, y, 1, 1).data;
+          rs += data[0]; gs += data[1]; bs += data[2]; c++;
+        }
+      }
+      if (c === 0) return;
+      const rmean = rs/c, gmean = gs/c, bmean = bs/c;
+      const brightness = (rmean+gmean+bmean)/3;
+      let label = 'protein';
+      let conf = 0.4;
+      if (gmean > rmean && gmean > bmean) { label = 'vegetable'; conf = 0.6 + (gmean - Math.max(rmean,bmean))/255; }
+      else if (brightness > 180) { label = 'starch'; conf = 0.6 + (brightness-180)/75; }
+      else if (Math.abs(rmean-gmean) < 15 && rmean > bmean) { label = 'protein'; conf = 0.5; }
+      conf = Math.max(0.2, Math.min(0.95, conf));
+      dets.push({ label, confidence: conf, box: r, category: label });
+    });
+    return dets;
+  };
 
   useEffect(() => {
     let stream;
@@ -55,15 +142,22 @@ export default function LiveView() {
         // Get base64
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
 
-        // Send to backend for analysis
-        const resp = await fetch(`${API_URL}/live/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: dataUrl })
-        });
-        const json = await resp.json();
-        if (json?.success) {
-          const dets = json.detections || [];
+        let dets = [];
+        if (useLocalDetection) {
+          dets = analyzeLocal(ctx, w, h);
+        } else {
+          // Send to backend for analysis
+          const resp = await fetch(`${API_URL}/live/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: dataUrl })
+          });
+          const json = await resp.json();
+          if (json?.success) {
+            dets = json.detections || [];
+          }
+        }
+        if (dets.length >= 0) {
           setDetections(dets);
 
           // Update rolling averages by label
@@ -80,17 +174,20 @@ export default function LiveView() {
           });
           setAvgByLabel(nextAvg);
 
+          // Update tracks and use their averages for per-box overlays
+          const tracks = updateTracks(dets);
+
           // Draw boxes
           ctx.strokeStyle = 'lime';
           ctx.lineWidth = 2;
           ctx.font = '14px sans-serif';
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
-          dets.forEach(d => {
-            if (!d.box) return;
-            const { x, y, width, height } = d.box;
+          tracks.forEach(t => {
+            if (!t.box) return;
+            const { x, y, width, height } = t.box;
             ctx.strokeRect(x, y, width, height);
-            const label = d.label || d.category || 'unknown';
-            const avg = nextAvg[label] || d.confidence || 0;
+            const label = t.label || 'unknown';
+            const avg = t.avg || 0;
             const text = `${label} ${(avg * 100).toFixed(0)}%`;
             const tw = ctx.measureText(text).width + 8;
             const th = 18;
@@ -112,10 +209,25 @@ export default function LiveView() {
   }, [running]);
 
   const buildDerivedText = () => {
-    const parts = Object.entries(avgByLabel)
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, avg]) => `${label}: avgConfidence=${(avg * 100).toFixed(0)}%`);
-    return `Detected items (rolling):\n${parts.join('\n')}\n`;
+    const video = videoRef.current;
+    const w = video?.videoWidth || 1;
+    const h = video?.videoHeight || 1;
+    const tracks = tracksRef.current || [];
+    const plateGrams = 500; // heuristic: full-frame ~500g of food
+
+    const lines = tracks.map(t => {
+      const area = (t.box?.width || 0) * (t.box?.height || 0);
+      const ratio = area / (w * h);
+      const grams = Math.round(Math.max(0, Math.min(plateGrams * ratio, plateGrams)));
+      return `${t.label}: avg=${(t.avg*100).toFixed(0)}%, areaRatio=${(ratio*100).toFixed(1)}%, estGrams=${grams}`;
+    });
+
+    const summary = Object.entries(avgByLabel)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([label, avg]) => `${label} avg=${(avg*100).toFixed(0)}%`)
+      .join(', ');
+
+    return `Tracks:\n${lines.join('\n')}\nSummary: ${summary}\nAssumptions: total plate ~${plateGrams}g; categories inferred by color.`;
   };
 
   const estimateMacros = async () => {
@@ -140,6 +252,10 @@ export default function LiveView() {
     <div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
         <button onClick={() => setRunning((v) => !v)}>{running ? 'Stop' : 'Start'} Live</button>
+        <label style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+          <input type="checkbox" checked={useLocalDetection} onChange={e=>setUseLocalDetection(e.target.checked)} />
+          Use local detection
+        </label>
         <button onClick={estimateMacros} disabled={!running && Object.keys(avgByLabel).length === 0}>
           Estimate Macros
         </button>
