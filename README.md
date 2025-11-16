@@ -74,6 +74,10 @@ $ make docker-up
 * Backend API: http://localhost:5000
 * Health Check: http://localhost:5000/health
 
+## Screenshot
+
+![](./asset/reference/1.png)
+
 ## Architecture
 
 * Browser captures frames
